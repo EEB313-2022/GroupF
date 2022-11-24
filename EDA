@@ -1,0 +1,91 @@
+---
+title: "EEB313 Final Project EDA"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+cases_dataset <- read.csv("cases_dataset.csv")
+species_dataset <- read.csv("species_dataset.csv")
+```
+
+```{r}
+# Distribution of Latitude
+ggplot() + geom_histogram(data = species_dataset, aes(x = Lat, fill = Complex)) + labs(title = "Distribution of Latitude", x = "Latitude", y = "Frequency") + scale_fill_brewer(palette="Blues")
+
+# Distribution of Longitude
+ggplot() + geom_histogram(data = species_dataset, aes(x = Long, fill = Complex)) + labs(title = "Distribution of Longitude", x = "Longitude", y = "Frequency") + scale_fill_brewer(palette="Greens")
+```
+
+```{r}
+# occurences of complexes
+ggplot(species_dataset, aes(x=factor(1), fill=Complex))+
+geom_bar(stat = "count") + coord_polar(theta='y') + scale_fill_brewer(palette="Blues")+
+  theme_minimal() + labs(title = "Occurences of Complexes", x = "", y = "")
+
+# occurences of species
+ggplot(species_dataset, aes(x=factor(1), fill=Species))+
+geom_bar(stat = "count") + coord_polar(theta='y') + theme_minimal() + labs(title = "Occurences of Species", x = "", y = "")+ theme(legend.position="bottom")
+```
+```{r}
+ggplot(species_dataset, aes(x=factor(1), fill=multiple_methods))+
+geom_bar(stat = "count") + coord_polar(theta='y') + scale_fill_brewer(palette="Greens") + theme_minimal() + labs(title = "Usage of Identification Method ", x = "", y = "") + guides(fill=guide_legend(title="Applied more than one Species Identification Methods?"))
+```
+
+```{r}
+# Boxplots for Latitude and Longitude
+
+ggplot() + geom_boxplot(data = species_dataset, aes(x = Complex, y = Lat, fill = Complex)) + scale_fill_brewer(palette="Blues") + theme(axis.text.x=element_blank()) + labs(title = "Boxplot of Latitude", y = "Latitude", x = "")
+
+ggplot() + geom_boxplot(data = species_dataset, aes(x = Complex, y = Long, fill = Complex)) + scale_fill_brewer(palette="Greens") + theme(axis.text.x=element_blank()) + labs(title = "Boxplot of Longitude", y = "Longitude", x = "")
+```
+```{r}
+# Distribution of Species Richness
+ggplot() + geom_histogram(data = cases_dataset, color="black", fill="white", aes(x = Species_Richness)) + labs(title = "Distribution of Species Richness", x = "Species Richness", y = "Frequency") +  scale_x_continuous(breaks=1:11)
+```
+
+```{r}
+# Species Richness over time for different Countries
+
+ggplot() + geom_line(data = cases_dataset, aes(x = Year, y = Species_Richness)) + facet_wrap(vars(Country)) + theme(axis.text.x=element_blank(), axis.text.y=element_blank()) + labs(title = "Species Richness over time", x = "Year", y = "Species Richness")
+```
+```{r}
+# Species Richness and Incidence over time
+
+coeff <- 55.203
+
+ggplot(data = cases_dataset, aes(x=Year)) + geom_smooth(method = lm, aes(y=Species_Richness), size=2, color="#E69F00") + geom_smooth(method = lm, aes(y=Incidence/coeff), size=2, color="#56B4E9") + scale_y_continuous(name = "Species Richness", sec.axis = sec_axis(~.*coeff, name="Incidence")) + theme(
+    axis.title.y = element_text(color = "#E69F00", size=13),
+    axis.title.y.right = element_text(color = "#56B4E9", size=13)
+  ) + labs(title = "Species Richness and Incidence over time")
+```
+```{r}
+# Species Richness and Cases over time
+
+coeff1 <- 500000
+
+ggplot(data = cases_dataset, aes(x=Year)) + geom_smooth(method = lm, aes(y=Species_Richness), size=2, color="#E69F00") + geom_smooth(method = lm, aes(y=Cases/coeff1), size=2, color="#009E73") + scale_y_continuous(name = "Species Richness", sec.axis = sec_axis(~.*coeff1, name="Cases")) + theme(
+    axis.title.y = element_text(color = "#E69F00", size=13),
+    axis.title.y.right = element_text(color = "#009E73", size=13)
+  ) + labs(title = "Species Richness and Cases over time")
+```
+
+```{r}
+summary(cases_dataset)
+summary(species_dataset)
+```
+
+
+
+
+
+
+
+
