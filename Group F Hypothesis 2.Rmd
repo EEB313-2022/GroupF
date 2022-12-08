@@ -1,0 +1,114 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+Hypothesis 2 Testing
+
+HA: The species richness in Anopheles subgenera observed in African regions is decreasing
+from 2007 to 2016.
+
+H0: There is no change over time in the species richness within the Anopheles subgenera
+observed in African regions.
+
+Prediction: If we observe that mosquitoes within the Anopheles subgenus are expanding their
+range latitudinally, we could attribute this effect to climate warming. The literature supports that climate warming would have a more significant effect on temperate regions (with higher latitude) and this can influence the distribution of Anopheline mosquitoes (Afrane et al., 2012; Ryan et al., 2020). As such, this change in latitude can exert selection pressure on the Anopheles subgenus, which could lead to a decrease in species richness as one or several subgenera may be more effective malaria vectors.
+
+Data Analysis Plan: A mixed effect model will be used to test hypothesis 2. “Species Richness” will be the response
+variable, and “time” (Year) will be included as a fixed effect. “Country” will be included as a
+random effect, and we allow the slope to vary between different countries.
+Model output should help us to determine whether the correlation between Species Richness
+and Time is statistically significant.
+
+```{r}
+library(lme4)
+library(lmerTest)
+library(sjmisc)
+library(MuMIn)
+library(knitr)
+```
+
+```{r}
+cases_dataset <- read.csv("C:/Users/sarah/Downloads/cases_dataset.csv")
+```
+
+#modelling species richness by country 
+```{r}
+mixed_model_sr_v_c <- lmer(Species_Richness ~ Year+(1|Country), data = cases_dataset, REML=T)
+```
+
+#only modelling the effect of country 
+```{r}
+mixed_model_c <- lmer(Species_Richness ~ 1+(1|Country), data = cases_dataset, REML=F)
+summary(mixed_model_c)
+```
+
+#modelling the effect of country and year
+```{r}
+mixed_model_country <- lmer(Species_Richness ~ 1+(1|Country), data = cases_dataset, REML=F)
+
+mixed_model_richness_year_country <- lmer(Species_Richness ~ Year+(1|Country), data = cases_dataset, REML=T)
+
+mixed_model_int_country_year <- lm(Species_Richness ~ Year*Country, data = cases_dataset)
+```
+
+Creating visual
+```{r}
+names <- c("Year + (1|Country)", "(1|Country)", "Year * Country")
+
+df <- c(4, 3, 81)
+
+Rsqr <- c(r.squaredGLMM(mixed_model_richness_year_country)[2],
+          r.squaredGLMM(mixed_model_country)[2],
+          r.squaredGLMM(mixed_model_int_country_year)[2])
+
+AICc <- c(1080.13, 1151.69, 931.33)
+
+table <- data.frame(names, df, Rsqr, AICc)
+
+kable_table <- kable(table, col.names = c("Candidate Models", "DF", "$R^2$", "$AIC_c$"), caption = "Ignore me")
+kable_table
+kable_table2 <- kable(table, col.names = c("Candidate Models", "DF", "$R^2$", "$AIC_c$"), caption = "Reporting Mixed Model Statistics")
+kable_table2
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
