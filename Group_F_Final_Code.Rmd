@@ -1,0 +1,379 @@
+---
+title: "R Notebook"
+author: "Group F - Meichen Zhou"
+output: pdf_document
+---
+
+Hypothesis 1 Testing
+
+HA: The net latitudinal range of species in the Anopheles subgenus is increasing from 1898 to 2016 in Africa.
+H0: The average absolute latitudinal range of species in the Anopheles subgenus is not changing from 1898 to 2016 in Africa.
+
+Prediction: We predict that there may be changes to the average, minimal and maximal latitudes
+where the Anopheline malaria vector species is observed. In this case, net latitudinal range indicates an expansion in both directions from the equator. Anopheline mosquitoes are the main vectors for malaria transmission, and we expect that these mosquitoes will expand their range (represented by net latitudinal range), as observed by their presence in more areas across Africa. We predict this given the documented history of Malaria cases in the African continent increasing over the years (Fact Sheet about Malaria, 2022).
+
+
+Data Analysis Plan: Paired t-tests will be used to test hypothesis 1. The observed latitudes at the earliest and the latest time points for each species will be compared by these tests, and the corresponding p-values will provide evidence towards or against the null hypothesis (as the paired t-tests will examine whether the mean difference between pairs of measurements is zero or not). 
+
+Install Library of Packages Needed
+```{r}
+library(tidyverse) #For data wrangling
+library(readr) #To read rectangular data
+library(knitr) #To make formatted tables
+library(ggpubr) #To make well formatted graphs
+library(PairedData) #Paired data hypothesis testing
+
+library(lme4) #Package to generate linear models
+library(lmerTest) #Package to test the assumptions of linear models
+library(sjmisc) #Support data transformations
+library(MuMIn) #Calculate AIC measures
+
+library(ggalt) #A package with scales and fonts to compliment ggplot
+library(car) #Regression package
+```
+
+Read in original csv data
+```{r}
+data <- read.csv("C:/Users/sarah/Downloads/species_dataset.csv")
+cases_dataset <- read.csv("C:/Users/sarah/Downloads/cases_dataset.csv")
+cases <- read.csv("C:/Users/sarah/Downloads/cases_dataset.csv")
+```
+
+Data Restructure
+- filter out all of the NAs
+- select columns needed
+- group by species. 24 different species in total in Africa
+- filter out the first/last five year's latitude data for each species
+- record the min and the max of the latitude in the five year period
+- tally to see
+
+```{r}
+earliest_data = data %>% 
+  filter(!is.na(Lat)) %>% 
+  dplyr::select(Lat,YeStart,Complex,Species,Sub_Specices) %>% 
+  group_by(Complex,Species,Sub_Specices) %>% 
+  filter(YeStart>=min(YeStart),YeStart<=min(YeStart)+5) %>% 
+  mutate(Earliest_Year = min(YeStart),Earliest_Lat_min = min(Lat),Earliest_Lat_Max = max(Lat))%>%
+  group_by(Complex,Species,Sub_Specices,Earliest_Year,Earliest_Lat_min,Earliest_Lat_Max) %>%
+  tally()
+```
+
+```{r}
+lastest_data = data %>% 
+  filter(!is.na(Lat)) %>% 
+  dplyr::select(Lat,YeStart,Complex,Species,Sub_Specices) %>% 
+  group_by(Complex,Species,Sub_Specices) %>% 
+  filter(YeStart<=max(YeStart),YeStart>=max(YeStart)-5) %>% 
+  mutate(Lastest_Year = max(YeStart),Lastest_Lat_min = min(Lat),Lastest_Lat_Max = max(Lat))%>%
+  group_by(Complex,Species,Sub_Specices,Lastest_Year,Lastest_Lat_min,Lastest_Lat_Max) %>%
+  tally()
+```
+
+Merge two datasets together
+```{r}
+merged_data = merge(earliest_data,lastest_data, by=c("Complex","Species","Sub_Specices"))
+merged_data = merged_data %>% dplyr::select(-n.x,-n.y)
+```
+
+Calculate the net latitudianl range for the first/last five year
+```{r}
+paired_data = merged_data %>% 
+  mutate(Earliest_Range = abs(Earliest_Lat_Max - Earliest_Lat_min)) %>% 
+  mutate(Lastest_Range = abs(Lastest_Lat_Max - Lastest_Lat_min)) %>% 
+  mutate(Species_2 = case_when(Sub_Specices == "SS.M.Form" ~ "An gambiae ss (M Form)",
+                               Sub_Specices == "SS.S.Form" ~ "An gambiae ss (S Form)",
+                               Sub_Specices == "Unspecified Sub Species" ~ "An gambiae ss (Unspecified Sub Species)",
+                               Sub_Specices == NA ~ Species,
+                               1 == 1 ~ Species)) %>% 
+  dplyr::select(c(Species_2, Earliest_Range, Lastest_Range))
+
+#Create a figure
+table <- kable(paired_data, col.names = c("Species", "Earliest Range", "Latest Range"), caption = "Earliest and Latest Ranges of Anopheles Sub Species")
+```
+
+Test normality
+```{r}
+shapiro.test(paired_data$Earliest_Range)
+shapiro.test(paired_data$Lastest_Range)
+```
+
+Result:
+Earliest_Range:Almost PASS p=0.049
+Lastest_Range:PASS
+
+Test Variance
+```{r}
+var.test(paired_data$Earliest_Range, paired_data$Lastest_Range)
+help(var.test)
+```
+
+Paired t-test
+```{r}
+t.test(paired_data$Earliest_Range,paired_data$Lastest_Range,paried = TRUE)
+```
+Plot the change in RANGE to see the trend
+
+3 out of 24 are decreasing
+21 out of 24 are increasing
+```{r}
+pd <- paired(paired_data$Earliest_Range,paired_data$Lastest_Range)
+colnames(pd) <- c("Earliest Range","Lastest Range")
+head(pd)
+
+ggpaired(pd,
+         cond1 = "Earliest Range",
+         cond2 = "Lastest Range",
+         fill = "condition",
+         palette = "jco",
+         title = "Figure 1: Comparison of Anopheles Species Range during \n First and Last Observed Period",
+         xlab = FALSE,
+         ylab = "Range (Degrees)")
+```
+
+Hypothesis 2 Testing
+
+HA: The species richness in Anopheles subgenera observed in African regions is decreasing
+from 2007 to 2016.
+
+H0: There is no change over time in the species richness within the Anopheles subgenera
+observed in African regions.
+
+Prediction: If we observe that mosquitoes within the Anopheles subgenus are expanding their
+range latitudinally, we could attribute this effect to climate warming. The literature supports that climate warming would have a more significant effect on temperate regions (with higher latitude) and this can influence the distribution of Anopheline mosquitoes (Afrane et al., 2012; Ryan et al., 2020). As such, this change in latitude can exert selection pressure on the Anopheles subgenus, which could lead to a decrease in species richness as one or several subgenera may be more effective malaria vectors.
+
+Data Analysis Plan: A mixed effect model will be used to test hypothesis 2. “Species Richness” will be the response
+variable, and “time” (Year) will be included as a fixed effect. “Country” will be included as a
+random effect, and we allow the slope to vary between different countries.
+Model output should help us to determine whether the correlation between Species Richness and Time is statistically significant.
+
+#modelling species richness by country 
+```{r}
+mixed_model_sr_v_c <- lmer(Species_Richness ~ Year+(1|Country), data = cases_dataset, REML=T)
+```
+
+#only modelling the effect of country 
+```{r}
+mixed_model_c <- lmer(Species_Richness ~ 1+(1|Country), data = cases_dataset, REML=F)
+summary(mixed_model_c)
+```
+
+#modelling the effect of country and year
+```{r}
+mixed_model_country <- lmer(Species_Richness ~ 1+(1|Country), data = cases_dataset, REML=F)
+
+mixed_model_richness_year_country <- lmer(Species_Richness ~ Year+(1|Country), data = cases_dataset, REML=T)
+
+mixed_model_int_country_year <- lm(Species_Richness ~ Year*Country, data = cases_dataset)
+```
+
+Checking Assumptions
+1. Linearity of relationships between predictors and response variable
+2. Independence of predictor variables: there is only one predictor variable
+3. Independence of residuals
+4. Constant variance of residuals
+5. Normality of residuals
+- 
+```{r}
+#Linearity of relationships
+cases_dataset %>% 
+  ggplot(aes(Species_Richness, Country)) +
+  geom_point() +
+  geom_smooth()
+
+cases_dataset %>% 
+  ggplot(aes(Species_Richness, Year)) +
+  geom_point() +
+  geom_smooth()
+
+#Independence of residuals
+plot(order(residuals(mixed_model_sr_v_c)),ylab="Residuals in Order")
+
+#Constant variance of residuals
+plot(mixed_model_sr_v_c)
+
+#Normality of residuals
+qqnorm(residuals(mixed_model_sr_v_c))
+```
+
+Creating visual
+```{r}
+names <- c("Year + (1|Country)", "(1|Country)", "Year * Country")
+
+df <- c(4, 3, 81)
+
+Rsqr <- c(r.squaredGLMM(mixed_model_richness_year_country)[2],
+          r.squaredGLMM(mixed_model_country)[2],
+          r.squaredGLMM(mixed_model_int_country_year)[2])
+
+AICc <- c(1080.13, 1151.69, 931.33)
+
+table <- data.frame(names, df, Rsqr, AICc)
+
+kable_table <- kable(table, col.names = c("Candidate Models", "DF", "$R^2$", "$AIC_c$"), caption = "Reporting Mixed Model Statistics")
+kable_table
+```
+
+Hypothesis 3 Testing
+
+HA: There is a correlation between Anopheles subgenus species richness at the country level and the number of reported malaria cases.
+
+H0: There is no correlation between the Anopheles subgenus species richness at the regional level and the number of reported malaria cases.
+
+Prediction: We anticipate that a decrease in Anopheles subgenus species richness would result in a greater number of reported malaria cases. A decrease in Anopheles subgenus species richness may reflect an overall decrease in the number of mosquitoes that can transmit malaria. However, this decrease in species richness may also reflect the fact that certain subgenera become dominant and contribute to an increased number of malaria cases over time. 
+
+Data Analysis Plan: Hypothesis 3 will also be tested with a mixed effect model. In this case, the number of reported Malaria cases will be the response variable, and Species Richness will be included as a fixed effect. Country and Time will be included as random effects and we allow the slope to vary among different countries. Rurality (represented by Rural Percentage and/or Rural Growth Percentage) might also be included as random effects, to better account for the differences between countries. 
+We will likely fit multiple models (and test more predictor variables such as preventive measures) and evaluate them to find a final model that best represents the scenario. Output from that model should provide insights into the significance of the correlation between Species Richness and the number of reported Malaria cases. 
+
+Load data and select avriables of interest
+```{r}
+cases <- cases %>% 
+  dplyr::select(-c(X, Incidence, Rural..))
+
+colnames(cases) = c("Country", "Year", "Richness", "Incidence", "Rural_Growth")
+```
+
+# Models
+```{r}
+#Backwards Selection
+full_rv_model <- glm(Incidence ~ Richness + Country + Year + Rural_Growth, data = cases)
+
+rv_model_1 <- glm(Incidence ~ Richness + Year + Rural_Growth, data = cases)
+rv_model_2 <- glm(Incidence ~ Richness + Country + Rural_Growth, data = cases)
+rv_model_3 <- glm(Incidence ~ Richness + Country + Year, data = cases)
+AICc(full_rv_model, rv_model_1, rv_model_2, rv_model_3)
+
+rv_model_4 <- glm(Incidence ~ Country + Year, data = cases)
+rv_model_5 <- glm(Incidence ~ Richness + Year, data = cases)
+rv_model_6 <- glm(Incidence ~ Richness + Country, data = cases)
+AICc(rv_model_4, rv_model_5, rv_model_6)
+
+full_mixed_model <- lmer(Incidence ~ Richness + Rural_Growth + Year + (1|Country), data = cases)
+mixed_model_1 <- lmer(Incidence ~ Richness + Year + (1|Country), data = cases)
+mixed_model_2 <- lmer(Incidence ~ Richness + Rural_Growth + (1|Country), data = cases)
+AICc(full_mixed_model, mixed_model_1, mixed_model_2)
+
+#The best model is full_mixed_model
+summary(full_mixed_model)
+```
+
+Checking Assumptions
+1. Linearity of relationships between predictors and response variable
+2. Independence of predictor variables
+3. Independence of residuals
+4. Constant variance of residuals
+5. Normality of residuals
+- 
+```{r}
+#Linearity of relationships
+cases %>% 
+  ggplot(aes(Richness, Incidence)) +
+  geom_point() +
+  geom_smooth()
+
+cases %>% 
+  ggplot(aes(Year, Incidence)) +
+  geom_point() +
+  geom_smooth()
+
+cases %>% 
+  ggplot(aes(Rural_Growth, Incidence)) +
+  geom_point() +
+  geom_smooth()
+
+#Independence of predictor variables
+vif(full_mixed_model)
+
+#Independence of residuals
+plot(order(residuals(full_mixed_model)),ylab="Residuals in Order")
+
+#Constant variance of residuals
+plot(full_mixed_model)
+
+#Normality of residuals
+qqnorm(residuals(full_mixed_model))
+```
+
+$$Incidence \propto -5000 -0.34 * Species Richness + 15.7 * Rural Growth + 27.5 * Year$$
+
+Create model description tables
+```{r}
+names <- c("Richness + Country + Year + Rural Growth",
+           "Richness + Year + Rural Growth",
+           "Richness + Country + Rural Growth",
+           "Richness + Country + Year",
+           "Country + Year",
+           "Richness + Year",
+           "Richness + Country")
+df <- c(44, 5, 43, 43, 42, 4, 42)
+Rsqr <- c(r.squaredGLMM(full_rv_model)[2],
+          r.squaredGLMM(rv_model_1)[2],
+          r.squaredGLMM(rv_model_2)[2],
+          r.squaredGLMM(rv_model_3)[2],
+          r.squaredGLMM(rv_model_4)[2],
+          r.squaredGLMM(rv_model_5)[2],
+          r.squaredGLMM(rv_model_6)[2])
+Rsqr <- round(Rsqr, 2)
+AICc <- c(9300, 9360, 9354, 9298, 9301, 9368, 9354)
+
+table <- data.frame(names, df, Rsqr, AICc)
+
+names2 <- c("Richness + Rural Growth + Year + (1|Country)",
+           "Richness + Year + (1|Country)",
+           "Richness + Rural Growth + (1|Country)")
+df2 <- c(6, 5, 5)
+Rsqr2 <- c(r.squaredGLMM(full_mixed_model)[2],
+          r.squaredGLMM(mixed_model_1)[2],
+          r.squaredGLMM(mixed_model_2)[2])
+Rsqr2 <- round(Rsqr2, 2)
+AICc2 <- c(9219, 9244, 9313)
+
+table2 <- data.frame(names2, df2, Rsqr2, AICc2)
+```
+
+Format as kables
+```{r}
+glm_table <- kable(table, col.names = c("Candidate Model", "DF", "$R^2$", "$AIC_c$"), caption = "Reporting General Linear Model Statistics")
+glm_table
+
+mixed_table <- kable(table2, col.names = c("Candidate Model", "DF", "$R^2$", "$AIC_c$"), caption = "Reporting Mixed Effect Model Statistics")
+mixed_table
+```
+
+Create figures
+```{r}
+# Dataset containing only the top 9 largest countries by population in Africa.
+cases_some_countries <- subset(cases_dataset, Country %in% c("Nigeria", "Ethiopia", "Democratic Republic of the Congo", "Tanzania", "South Africa", "Kenya", "Uganda", "Sudan", "Angola"))
+ggplot() + geom_col(data = cases_some_countries, aes(x = Year, y = Incidence, fill = Species_Richness)) + labs (title = "Figure 2: Bar Plots of Malarial Incidence over Time, colored by species richness") + facet_wrap(vars(Country))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
