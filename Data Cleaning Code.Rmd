@@ -1,0 +1,323 @@
+---
+title: "EEB313 R codes"
+author: 'Zhiqi Tang, SD edits'
+date: "2022-10-31"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r,include = FALSE}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
+library(dplyr)
+library(ggplot2)
+
+data <- read.csv("C:/Users/sarah/Downloads/archive/Africa_Vectors_database_1898-2016.csv")
+head(data)
+```
+
+```{r}
+drops <- c("Full_Name","LatLong_Source", "Source_Title", "Other.sib.species.names", "Other.Anopheline.species")
+data_reduced <- data[ , !(names(data) %in% drops)]
+```
+
+```{r}
+SS.M <-  data_reduced %>% 
+  filter(An.gambiae_complex == "Y" & An.gambiae.ss == "Y" & SS.M.Form..An.colluzzi.or.Mopti.forms. == "Y") %>% 
+  mutate(Complex = "An gambiae_complex", Species = "An gambiae ss", Sub_Specices = "SS.M.Form") %>% 
+  select(1:7,34:39)
+
+SS.S <-  data_reduced %>% 
+  filter(An.gambiae_complex == "Y" & An.gambiae.ss == "Y" & SS.S.Form..savanah.or.Bamako.forms. == "Y") %>% 
+  mutate(Complex = "An gambiae_complex", Species = "An gambiae ss", Sub_Specices = "SS.S.Form") %>% 
+  select(1:7,34:39)
+
+SS.U <-  data_reduced %>% 
+  filter(An.gambiae_complex == "Y" & An.gambiae.ss == "Y" & SS.M.Form..An.colluzzi.or.Mopti.forms. != "Y" & SS.S.Form..savanah.or.Bamako.forms. != "Y") %>% 
+  mutate(Complex = "An gambiae_complex", Species = "An gambiae ss", Sub_Specices = "Unspecified Sub Species") %>% 
+  select(1:7,34:39)
+
+An.arab <-  data_reduced %>% 
+  filter(An.gambiae_complex == "Y" & An.arabiensis == "Y") %>% 
+  mutate(Complex = "An gambiae_complex", Species = "An.arabiensis", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An..melas <-  data_reduced %>% 
+  filter(An.gambiae_complex == "Y" & An..melas == "Y") %>% 
+  mutate(Complex = "An gambiae_complex", Species = "An..melas", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An..merus <-  data_reduced %>% 
+  filter(An.gambiae_complex == "Y" & An..merus == "Y") %>% 
+  mutate(Complex = "An gambiae_complex", Species = "An..merus", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.bwambae <-  data_reduced %>% 
+  filter(An.gambiae_complex == "Y" & An.bwambae == "Y") %>% 
+  mutate(Complex = "An gambiae_complex", Species = "An.bwambae", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.funestus.s.s. <-  data_reduced %>% 
+  filter(An.funestus..s.l == "Y" & An.funestus.s.s...specified. == "Y") %>% 
+  mutate(Complex = "An.funestus..s.l", Species = "An.funestus.s.s...specified.", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.rivulorum <-  data_reduced %>% 
+  filter(An.funestus..s.l == "Y" & An.rivulorum == "Y") %>% 
+  mutate(Complex = "An.funestus..s.l", Species = "An.rivulorum", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.leesoni <-  data_reduced %>% 
+  filter(An.funestus..s.l == "Y" & An.leesoni == "Y") %>% 
+  mutate(Complex = "An.funestus..s.l", Species = "An.leesoni", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.parensis <-  data_reduced %>% 
+  filter(An.funestus..s.l == "Y" & An.parensis == "Y") %>% 
+  mutate(Complex = "An.funestus..s.l", Species = "An.parensis", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.vaneedeni <-  data_reduced %>% 
+  filter(An.funestus..s.l == "Y" & An.vaneedeni == "Y") %>% 
+  mutate(Complex = "An.funestus..s.l", Species = "An.vaneedeni", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.funestus..s.l.U <-  data_reduced %>% 
+  filter(An.funestus..s.l == "Y" & An.vaneedeni != "Y" &  An.parensis != "Y" & An.leesoni != "Y" & An.rivulorum != "Y" & An.funestus.s.s...specified. != "Y") %>% 
+  mutate(Complex = "An.funestus..s.l", Species = "Unspecified Species", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.nili.s.l <-  data_reduced %>% 
+  filter(An.nili.s.l == "Y") %>% 
+  mutate(Complex = "An.nili.s.l", Species = "Unspecified Species", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.moucheti.s.l <-  data_reduced %>% 
+  filter(An.moucheti.s.l == "Y") %>% 
+  mutate(Complex = "Other Complexes", Species = "An.moucheti.s.l", Sub_Specices = "Unspecified Sub Species") %>% 
+  select(1:7,34:39)
+
+An.pharoensis <-  data_reduced %>% 
+  filter(An.pharoensis == "Y") %>% 
+  mutate(Complex = "Other Complexes", Species = "An.pharoensis", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.hancocki <-  data_reduced %>% 
+  filter(An.hancocki == "Y") %>% 
+  mutate(Complex = "Other Complexes", Species = "An.hancocki", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.mascarensis <-  data_reduced %>% 
+  filter(An.mascarensis == "Y") %>% 
+  mutate(Complex = "Other Complexes", Species = "An.mascarensis", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.squamous <-  data_reduced %>% 
+  filter(An.squamous == "Y") %>% 
+  mutate(Complex = "Other Complexes", Species = "An.squamous", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.wellcomei <-  data_reduced %>% 
+  filter(An.wellcomei == "Y") %>% 
+  mutate(Complex = "Other Complexes", Species = "An.wellcomei", Sub_Specices = "Unspecified Sub Species") %>% 
+  select(1:7,34:39)
+
+An.rufipes <-  data_reduced %>% 
+  filter(An.rufipes == "Y") %>% 
+  mutate(Complex = "Other Complexes", Species = "An.rufipes", Sub_Specices = "Unspecified Sub Species") %>% 
+  select(1:7,34:39)
+
+An.ziemanni <-  data_reduced %>% 
+  filter(An.coustani.s.l == "Y" & An.ziemanni == "Y") %>% 
+  mutate(Complex = "An.coustani.s.l", Species = "An.ziemanni", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.paludis <-  data_reduced %>% 
+  filter(An.coustani.s.l == "Y" & An.paludis == "Y") %>% 
+  mutate(Complex = "An.coustani.s.l", Species = "An.paludis", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+
+An.coustani.s.l.U <-  data_reduced %>% 
+  filter(An.coustani.s.l == "Y" & An.paludis != "Y" & An.ziemanni != "Y") %>% 
+  mutate(Complex = "An.coustani.s.l", Species = "Unspecified Species", Sub_Specices = NA) %>% 
+  select(1:7,34:39)
+```
+
+```{r}
+data_clean <- rbind(An..melas, An..merus, An.arab, An.bwambae, An.coustani.s.l.U, An.funestus..s.l.U, An.funestus.s.s., An.hancocki, An.leesoni, An.mascarensis, An.moucheti.s.l, An.nili.s.l, An.paludis, An.parensis, An.pharoensis, An.rivulorum, An.rufipes, An.squamous, An.vaneedeni, An.wellcomei, An.ziemanni, SS.M, SS.S, SS.U)
+data_clean
+
+cleaned_identification_data <- data_clean %>%  
+  mutate(multiple_methods = grepl(",", data_clean$Species_Identification)) %>% 
+  select(-c(Sampling_Methods, Species_Identification, Adults.Larvae)) %>% 
+  print()
+```
+```{r}
+data_to_merge <- cleaned_identification_data %>% 
+  mutate(Species_Family = case_when(Complex != "Other Complexes" ~ Complex,
+                                     Complex == "Other Complexes" ~ Species)) %>% 
+  select(Country, YeStart, YeEnd, Species_Family) %>% 
+  filter(YeStart <= 2017 & YeEnd >= 2007) %>% 
+  print()
+```
+```{r}
+#All species seen in 2007 
+obvs_2007 <- data_to_merge %>% 
+  filter(YeStart <= 2007 & YeEnd >= 2007) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2007) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2008 <- data_to_merge %>% 
+  filter(YeStart <= 2008 & YeEnd >= 2008) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2008) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2009 <- data_to_merge %>% 
+  filter(YeStart <= 2009 & YeEnd >= 2009) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2009) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2010 <- data_to_merge %>% 
+  filter(YeStart <= 2010 & YeEnd >= 2010) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2010) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2011 <- data_to_merge %>% 
+  filter(YeStart <= 2011 & YeEnd >= 2011) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2011) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2012 <- data_to_merge %>% 
+  filter(YeStart <= 2012 & YeEnd >= 2012) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2012) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2013 <- data_to_merge %>% 
+  filter(YeStart <= 2013 & YeEnd >= 2013) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2013) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2014 <- data_to_merge %>% 
+  filter(YeStart <= 2014 & YeEnd >= 2014) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2014) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2015 <- data_to_merge %>% 
+  filter(YeStart <= 2015 & YeEnd >= 2015) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2015) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2016 <- data_to_merge %>% 
+  filter(YeStart <= 2016 & YeEnd >= 2016) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2016) %>% 
+  select(Country, Year, Species_Richness)
+
+obvs_2017 <- data_to_merge %>% 
+  filter(YeStart <= 2017 & YeEnd >= 2017) %>% 
+  group_by(Country, Species_Family) %>% 
+  summarize(count = n()) %>% 
+  summarize(Species_Richness = length(unique(Species_Family))) %>%  
+  mutate(Year = 2017) %>% 
+  select(Country, Year, Species_Richness)
+```
+```{r}
+species_data <- rbind(obvs_2007, obvs_2008, obvs_2009, obvs_2010, obvs_2011, obvs_2012, obvs_2013, obvs_2014, obvs_2015, obvs_2016, obvs_2017)
+species_data$Country[species_data$Country == "C\x99te d'Ivoire"] <- "Cote d'Ivoire"
+```
+
+
+```{r}
+species_data %>% 
+  filter(Country == "Angola") %>% 
+  ggplot(aes(x = Year, y = Species_Richness)) +
+  geom_point(size=3) +
+  facet_wrap(~Country)
+```
+
+```{r}
+incidence_data <- read.csv("C:/Users/sarah/Downloads/archive (1)/DatasetAfricaMalaria.csv")
+head(incidence_data)
+
+incidence_data <- incidence_data %>% 
+  select(Country.Name, Year, Incidence.of.malaria..per.1.000.population.at.risk., Malaria.cases.reported,
+         Use.of.insecticide.treated.bed.nets....of.under.5.population., Children.with.fever.receiving.antimalarial.drugs....of.children.under.age.5.with.fever.,
+         Intermittent.preventive.treatment..IPT..of.malaria.in.pregnancy....of.pregnant.women., Rural.population....of.total.population., Rural.population.growth..annual...)
+
+colnames(incidence_data) <- c('Country', 'Year', 'Incidence', 'Cases', "Bednet Use", "Antimalarial Drug Use Children", "IPT Use in Pregnant Women", "Rural %", "Rural Pop Growth %")
+
+incidence_data$Country[incidence_data$Country == "Cabo Verde"] <- "Cape Verde"
+incidence_data$Country[incidence_data$Country == "Congo, Dem. Rep."] <- "Democratic Republic of the Congo"
+incidence_data$Country[incidence_data$Country == "Gambia, The"] <- "Gambia"
+incidence_data$Country[incidence_data$Country == "Guinea-Bissau"] <- "Guinea Bissau"
+
+incidence_data %>% 
+  group_by(Country) %>% 
+  summarize(count = n())
+
+species_data %>% 
+  group_by(Country) %>% 
+  summarize(count = n())
+```
+
+```{r}
+dataset <- merge(species_data, incidence_data, by = c('Country', 'Year'))
+head(dataset)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
